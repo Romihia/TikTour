@@ -10,7 +10,8 @@ export const createPost = async (req, res) => {
       userId,
       firstName: user.firstName,
       lastName: user.lastName,
-      location: user.location,
+      userName: user.username,
+      location: req.body.location,
       description,
       userPicturePath: user.picturePath,
       picturePath,
@@ -94,5 +95,17 @@ export const dislikePost = async (req, res) => {
     res.status(200).json(updatedPost);
   } catch (err) {
     res.status(404).json({ message: err.message });
+  }
+};
+
+/* DELETE */
+export const deletePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await Post.findByIdAndDelete(id);
+    const posts = await Post.find();
+    res.status(200).json({ message: 'Post deleted successfully', posts });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
