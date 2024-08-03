@@ -60,6 +60,7 @@ export const addRemoveFollow = async (req, res) => {
     const { id, userId } = req.params;  // 'id' is the logged-in user, 'userId' is the user to follow/unfollow
     const user = await User.findById(id);
     const follower = await User.findById(userId);
+    console.log(id);
 
     if (!user || !follower) {
       return res.status(404).json({ message: "User(s) not found" });
@@ -113,18 +114,17 @@ export const updateUser = async (req, res) => {
   }
 };
 
-/* UPDATE USER PASSWORD */
-export const updatePassword = async (req, res) => {
-  const { id } = req.params;
-  const { newPassword } = req.body;
+/* UPDATE USER Prompt */
+export const updateUserPrompt = async (req, res) => {
+  const { username } = req.params;
+  const { firstName, lastName, dateOfBirth, location, picturePath } = req.body;
+  console.log("firstName:", firstName, "lastName:", lastName, "dateOfBirth:", dateOfBirth, "location:", location, "profilePicture:", picturePath);
 
   try {
-    const salt = await bcrypt.genSalt();
-    const passwordHash = await bcrypt.hash(newPassword, salt);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { password: passwordHash },
+    //con picturePuth = picturePath.path
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { firstName, lastName, dateOfBirth, location, picturePath },
       { new: true }
     );
     res.status(200).json(updatedUser);
@@ -132,6 +132,44 @@ export const updatePassword = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+/* UPDATE USER PASSWORD */
+export const updatePassword = async (req, res) => {
+  const { id } = req.params;
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    // Find the user by ID
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if the oldPassword matches the user's current password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Old password is incorrect' });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update the user's password
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { password: passwordHash },
+      { new: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error('Error updating password:', error); // Log error for debugging
+    res.status(500).json({ error: 'An error occurred while updating the password' });
+  }
+};
+
 
 /* UPDATE USER PICTURE */
 export const updateUserPicture = async (req, res) => {
@@ -213,6 +251,27 @@ export const getTopLiker = async (req, res) => {
 
     const topLiker = await User.findById(topLikerId);
     res.status(200).json({ topLiker, likeCount: likerCounts[topLikerId] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getUserRank = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const posts = await Post.find({ userId: id });
+
+    // Determine the user's ranking based on the number of posts
+    let rank = "Novice Explorer"; // Default rank
+    const postCount = posts.length;
+    if (postCount >= 50) rank = "Master Traveler";
+    else if (postCount >= 40) rank = "Voyager";
+    else if (postCount >= 30) rank = "Globetrotter";
+    else if (postCount >= 20) rank = "Adventurer";
+    else if (postCount >= 10) rank = "Wanderer";
+
+    res.status(200).json({ rank });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

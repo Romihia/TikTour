@@ -3,12 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import sendEmail from "../utils/sendEmail.js";
 
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // Set secure flag in production
-  sameSite: 'Strict',
-  maxAge: 24 * 60 * 60 * 1000 // 1 day
-};
+
 
 /* REGISTER USER */
 export const register = async (req, res) => {
@@ -35,8 +30,6 @@ export const register = async (req, res) => {
       username,
       dateOfBirth,
       isVerified: false,
-      viewedProfile: Math.floor(Math.random() * 10000),
-      impressions: Math.floor(Math.random() * 10000),
     });
     
     // Check unique fileds
@@ -57,7 +50,7 @@ export const register = async (req, res) => {
     // Send verification email
     await sendEmail(savedUser.email, verificationLink, 'Activation');
 
-    res.status(201).json({ message: 'User registered successfully. Please check your email for activation link.', user: savedUser });
+    res.status(201).json({ message: 'User registered successfully. Please check your email for activation link.', user: savedUser,token: token });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -66,29 +59,42 @@ export const register = async (req, res) => {
 /* LOGGING IN */
 export const login = async (req, res) => {
   try {
-    const { identifier, password } = req.body;
+    const { identifier, password, rememberMe } = req.body;  
 
     let user = await User.findOne({ email: identifier });
     if (!user) {
       user = await User.findOne({ username: identifier });
     }
     if (!user) {
-      return res.status(400).json({ msg: "User does not exist. Incorrect email or username. " });
+      return res.status(400).json({ msg: "User does not exist. Incorrect email or username." });
     }
     if (!user.isVerified) {
       return res.status(400).json({ msg: "Please verify your email first." });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid password. " });
+      return res.status(400).json({ msg: "Invalid password." });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+
+    const expiresIn = rememberMe ? '7d' : '1h';
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn });
     delete user.password;
     res.status(200).json({ token, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+/* LOGOUT */
+export const logout = async (req, res) => {
+  try {
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 
 /* VERIFY EMAIL */
 export const verifyEmail = async (req, res) => {
