@@ -30,10 +30,11 @@ router.patch("/:id/:userId", verifyToken, addRemoveFollow);
 
 /* UPDATE USER PASSWORD */
 router.post("/:id/password", verifyToken, updatePassword);
+/* UPDATE USER PICTURE */
+router.post("/:id/picture", verifyToken, updateUserPicture);
 /* UPDATE USER DETAILS */
 router.patch("/:id", verifyToken, updateUser);
-/* UPDATE USER PICTURE */
-router.patch("/:id/picture", verifyToken, updateUserPicture);
+
 
 /* DELETE USER */
 router.delete("/:id", verifyToken, deleteUser); 

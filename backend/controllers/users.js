@@ -100,14 +100,27 @@ export const addRemoveFollow = async (req, res) => {
 /* UPDATE USER DETAILS */
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { firstName, lastName, email, location, rank } = req.body;
+  const { firstName, lastName, email, location, darkTheme, profilePicture } = req.body;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { firstName, lastName, email, location, rank },
-      { new: true }
-    );
+    // Prepare the update object
+    const updateFields = {};
+    if (firstName) updateFields.firstName = firstName;
+    if (lastName) updateFields.lastName = lastName;
+    if (email) updateFields.email = email;
+    if (location) updateFields.location = location;
+    if (darkTheme !== undefined) updateFields.darkTheme = darkTheme;
+
+    // Handle profilePicture URL update if provided
+    if (profilePicture) {
+      // Validate or process the profilePicture URL if necessary
+      updateFields.profilePicture = profilePicture;
+    }
+
+    // Update the user document
+    const updatedUser = await User.findByIdAndUpdate(id, updateFields, { new: true });
+
+    // Send the updated user as response
     res.status(200).json(updatedUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
